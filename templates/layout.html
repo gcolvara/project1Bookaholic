@@ -12,13 +12,9 @@
 
 
     <title>{% block title %}{% endblock %}</title>
-
       <style>
-        body {
-          background-color: #563F1B
-        }
-        p {
-          font-color: #FFDC5E,
+        body{
+          background-color: #735238
         }
       </style>
 </head>
@@ -26,18 +22,15 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-white border">
           <!-- logo -->
-        <a class="navbar-brand" style="color:black"><img class="mb-3" src="../static/logo.png" alt="Bookaholic" width="111" height="25"></a>
+        <a class="navbar-brand" style="color:black" href="/"><img class="mb-3" src="../static/logo.png" alt="Bookaholic" width="111" height="25"></a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown"
             aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="navbar-collapse collapse" id="navbarNavDropdown">
             {% if session.user_id %}
-                <ul class="navbar-nav mr-auto">
-                    <li class="nav-item"><a class="nav-link" href="/">Search</a></li>
-                </ul>
                 <ul class="navbar-nav ml-auto">
-                    <li class="nav-item"><a class="nav-link" href="#">{{ session.user_name }}</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Hello, {{ session.user_name }}</a></li>
                     <li class="nav-item"><a class="nav-link" href="/logout">Log Out</a></li>
                 </ul>
             {% else %}
