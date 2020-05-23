@@ -5,8 +5,6 @@ from flask_session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from werkzeug.security import check_password_hash, generate_password_hash
-
 import requests
 
 from helpers import login_required
@@ -30,7 +28,7 @@ def index():
     """ Show search box """
 
     return render_template("index.html")
-    
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     """ Log user in """
@@ -39,8 +37,9 @@ def login():
     session.clear()
 
     username = request.form.get("username")
+    password = request.form.get("password")
 
-    # Reached route via POST
+    # User reached route via POST
     if request.method == "POST":
 
         # Ensure username was submitted
@@ -48,18 +47,15 @@ def login():
             return render_template("error.html", message="must provide username")
 
         # Ensure password was submitted
-        elif not request.form.get("password"):
+        if not request.form.get("password"):
             return render_template("error.html", message="must provide password")
 
-        # Query username from database
-        rows = db.execute("SELECT * FROM users WHERE username = :username",
-                            {"username": username})
+        # Query username and password from database
+        rows = db.execute("SELECT * FROM users WHERE username = :username AND password = :password",
+                            {"username": username, "password": password})
 
         result = rows.fetchone()
 
-        # Ensure username exists and password is correct
-        if result == None or not check_password_hash(result[2], request.form.get("password")):
-            return render_template("error.html", message="invalid username and/or password")
 
         # Remember which user has logged in
         session["user_id"] = result[0]
@@ -68,7 +64,7 @@ def login():
         # Redirect user to home page
         return redirect("/")
 
-    # Reached route via GET
+    # User reached route via GET
     else:
         return render_template("login.html")
 
@@ -89,7 +85,7 @@ def register():
     # Forget any user_id
     session.clear()
 
-    # Reached route via POST
+    # User reached route via POST
     if request.method == "POST":
 
         # Ensure name was submitted
@@ -109,7 +105,7 @@ def register():
                           {"email":request.form.get("email")}).fetchone()
 
         # Check if email already exists
-        if userChech:
+        if userCheck:
             return render_template("error.html", message="The email is already in use")
 
         # Ensure username was submitted
@@ -136,16 +132,14 @@ def register():
         elif not request.form.get("password") == request.form.get("confirmation"):
             return render_template("error.html", message="Passwords doesn't match")
 
-        # Hash user's password to store in DB
-        hashedPassword = generate_password_hash(request.form.get("password"), method='pbkdf2:sha256', salt_length=8)
 
         # Insert register into DB
-        db.execute("INSERT INTO users (name, lastname, email, username, hash) VALUES (:name, :lastname, :email, :username, :password)",
+        db.execute("INSERT INTO users (name, lastname, email, username, password) VALUES (:name, :lastname, :email, :username, :password)",
                             {"name":request.form.get("name"),
                              "lastname":request.form.get("lastname"),
                              "email":request.form.get("email"),
                              "username":request.form.get("username"),
-                             "password":hashedPassword})
+                             "password":request.form.get("password")})
 
         # Commit changes to database
         db.commit()
@@ -155,7 +149,7 @@ def register():
         # Redirect user to login page
         return redirect("/login")
 
-    # Reached route via GET
+    # User reached route via GET
     else:
         return render_template("register.html")
 
@@ -178,7 +172,7 @@ def search():
     rows = db.execute("SELECT isbn, title, author, year FROM books WHERE \
                         isbn LIKE :query OR \
                         title LIKE :query OR \
-                        author LIKE :query LIMIT 15",
+                        author LIKE :query LIMIT 300",
                         {"query": query})
 
     # Books not founded
@@ -279,13 +273,7 @@ def book(isbn):
 
         # Fetch book reviews
         # Date formatting (https://www.postgresql.org/docs/9.1/functions-formatting.html)
-        results = db.execute("SELECT users.username, comment, rating, \
-                            to_char(time, 'DD Mon YY - HH24:MI:SS') as time \
-                            FROM users \
-                            INNER JOIN reviews \
-                            ON users.id = reviews.user_id \
-                            WHERE book_id = :book \
-                            ORDER BY time",
+        results = db.execute("SELECT users.username, comment, rating FROM users INNER JOIN reviews ON users.id = reviews.user_id WHERE book_id = :book",
                             {"book": book})
 
         reviews = results.fetchall()
